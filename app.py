@@ -1,52 +1,39 @@
 import streamlit as st
-from query_rag import ask_gemini
 
-# ----------------------------
-# 🧠 Sayfa ayarları
-# ----------------------------
-st.set_page_config(page_title="AYT Biyoloji RAG Asistanı", page_icon="🧬", layout="centered")
+st.set_page_config(page_title="AYT Biyoloji Asistanı", page_icon="🧬")
 
-st.title("🧬 AYT Biyoloji RAG Asistanı")
-st.markdown("""
-Bu uygulama, **MEB AYT Biyoloji kitabına** dayalı olarak geliştirilmiş bir **RAG (Retrieval-Augmented Generation)** sistemidir.  
-Sorularına sadece kitapta yer alan bilgiler doğrultusunda yanıt verir.  
----
-""")
+st.title("🧬 AYT Biyoloji Asistanı")
+st.caption("MEB 11. Sınıf Kitabı - Gemini RAG")
 
-# ----------------------------
-# 📝 Kullanıcı girişi
-# ----------------------------
-question = st.text_input("🔹 Sorunu yaz:", placeholder="örnek: Miyelin kılıfın görevi nedir?")
+# RAG sistemini yükle
+@st.cache_resource
+def load_rag():
+    rag = BiologyRAG()
+    rag.load_db()
+    return rag
 
-# ----------------------------
-# 🚀 Cevaplama işlemi
-# ----------------------------
-if st.button("Cevapla") and question.strip():
-    with st.spinner("Yanıt aranıyor..."):
-        try:
-            answer, docs = ask_gemini(question)
+rag = load_rag()
 
-            # --- Cevap bölümü ---
-            st.markdown("### ✳️ Cevap")
-            if answer:
-                st.write(answer)
-            else:
-                st.warning("⚠️ Model bir cevap üretemedi veya kaynak bulamadı.")
+# Chat interface
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-            # --- Kaynak bölümü ---
-            if docs and len(docs) > 0:
-                with st.expander("📘 Kullanılan kaynak parçaları"):
-                    for i, d in enumerate(docs, 1):
-                        snippet = d.page_content[:600].strip().replace("\n", " ")
-                        st.markdown(f"**Parça {i}:** {snippet}...")
-            else:
-                st.info("🔎 Bu soruya uygun kaynak bulunamadı veya doğrudan cevap üretildi.")
+# Mesajları göster
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-        except Exception as e:
-            st.error(f"Hata oluştu: {e}")
-
-# ----------------------------
-# 📎 Alt bilgi
-# ----------------------------
-st.markdown("---")
-st.caption("💡 Bu uygulama Gemini API + Chroma RAG sistemi ile çalışmaktadır.")
+# Kullanıcı inputu
+if prompt := st.chat_input("Biyoloji hakkında bir şey sor..."):
+    # Kullanıcı mesajını ekle
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+    
+    # Bot yanıtı
+    with st.chat_message("assistant"):
+        with st.spinner("Düşünüyorum..."):
+            response = rag.ask(prompt)
+            st.markdown(response)
+    
+    st.session_state.messages.append({"role": "assistant", "content": response})
