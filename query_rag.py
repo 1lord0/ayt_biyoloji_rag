@@ -1,77 +1,42 @@
 import os
 import google.generativeai as genai
 from langchain_community.vectorstores import Chroma
-from build_index_gemini import GeminiEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
-# 🔑 API key'i al (Streamlit secrets üzerinden)
+# Gemini API key'i ortam değişkeninden al
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# 📂 Veritabanı klasörü
+# Vektör veritabanı yolu
 DB_DIR = "db_gemini"
 
-# 📦 Chroma veritabanını yükle
-from langchain_community.vectorstores import Chroma
-from langchain_community.vectorstores.utils import filter_complex_metadata
+# Türkçe uyumlu embedding modeli (dilersen Gemini'yi de kullanabiliriz)
+embeddings = HuggingFaceEmbeddings(model_name="intfloat/multilingual-e5-base")
 
-# 📦 RAM tabanlı (in-memory) veritabanı
-vectordb = Chroma(
-    persist_directory=None,   # 💡 disk yok
-    embedding_function=GeminiEmbeddings()
-)
+# Chroma veritabanını yükle
+vectordb = Chroma(persist_directory=DB_DIR, embedding_function=embeddings)
 
-def ask_gemini(question, k=2):
-    """
-    AYT Biyoloji PDF veritabanından bilgi çekip
-    Gemini API ile hızlı şekilde cevap oluşturur.
-    """
 
+def ask_gemini(question):
     try:
-        # En alakalı k adet parçayı bul
-        docs = vectordb.similarity_search(question, k=k)
-    except Exception as e:
-        return f"⚠️ Veritabanı hatası: {e}", []
+        # Sorguya en yakın 3 belgeyi bul
+        docs = vectordb.similarity_search(question, k=3)
+        context = "\n\n".join([doc.page_content for doc in docs])
 
-    # Bağlam birleştirme
-    if not docs:
-        context = "PDF içeriğinde bu soruyla ilgili doğrudan bilgi bulunamadı."
-    else:
-        context = "\n\n".join([f"{i+1}. {d.page_content}" for i, d in enumerate(docs)])
+        # Prompt oluştur
+        prompt = f"""
+        MEB AYT Biyoloji kitabındaki bilgiler temel alınarak bu soruya sade ve kısa bir açıklama yap.
+        Kaynakta tam bilgi yoksa, konuya uygun genel bir açıklama da ekleyebilirsin.
 
-    # 🔹 Optimize edilmiş prompt
-prompt = f"""
-MEB AYT Biyoloji kitabındaki bilgiler temel alınarak bu soruya sade ve kısa bir açıklama yap.
-Kaynakta tam bilgi yoksa, konuya uygun genel bir açıklama da ekleyebilirsin.
+        Soru: {question}
+        Kaynak metinler:
+        {context}
+        """
 
-Soru: {question}
-Kaynak metinler:
-{context}
-
-    🔹 Soru:
-    {question}
-
-    📘 Kaynak Bilgiler:
-    {context}
-    """
-
-    try:
+        # Gemini modelini çağır
         model = genai.GenerativeModel("models/gemini-2.0-flash")
+        response = model.generate_content(prompt)
 
-
-
-        # ⏱️ Timeout koruması (20 sn)
-        response = model.generate_content(
-            prompt
-        )
-        return response.text.strip(), docs
+        return response.text.strip()
 
     except Exception as e:
-        return f"⚠️ Model hatası: {e}", []
-
-
-
-
-
-
-
-
-
+        return f"⚠️ Hata: {e}"
