@@ -11,7 +11,7 @@ DB_DIR = "db_gemini"
 # 📦 Vektör veritabanını yükle
 vectordb = Chroma(persist_directory=DB_DIR, embedding_function=GeminiEmbeddings())
 
-def ask_gemini(question, k=5):
+def ask_gemini(question, k=2):
     """PDF veritabanından bilgi çekip Gemini ile cevap oluşturur"""
     try:
         docs = vectordb.similarity_search(question, k=k)
@@ -40,7 +40,8 @@ def ask_gemini(question, k=5):
 
     try:
         model = genai.GenerativeModel("gemini-2.0-flash")
-        response = model.generate_content(prompt)
+        response = model.generate_content(prompt,request_options={"timeout": 20})
         return response.text.strip(), docs
     except Exception as e:
         return f"Model hatası: {e}", []
+
