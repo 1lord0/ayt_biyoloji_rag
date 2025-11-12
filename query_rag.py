@@ -38,17 +38,13 @@ def ask_gemini(question, k=2):
         context = "\n\n".join([f"{i+1}. {d.page_content}" for i, d in enumerate(docs)])
 
     # 🔹 Optimize edilmiş prompt
-    prompt = f"MEB AYT Biyoloji kitabındaki bilgiler temel alınarak bu soruya sade ve kısa bir açıklama yap."
-   prompt = f"Kaynakta tam bilgi yoksa, konuya uygun genel bir açıklama da ekleyebilirsin."
-
-
+prompt = f"""
+MEB AYT Biyoloji kitabındaki bilgiler temel alınarak bu soruya sade ve kısa bir açıklama yap.
+Kaynakta tam bilgi yoksa, konuya uygun genel bir açıklama da ekleyebilirsin.
 
 Soru: {question}
 Kaynak metinler:
 {context}
-"""
-
-     bilgi yoksa "Kitapta bu konuda net bilgi bulunmamaktadır." de.
 
     🔹 Soru:
     {question}
@@ -70,6 +66,7 @@ Kaynak metinler:
 
     except Exception as e:
         return f"⚠️ Model hatası: {e}", []
+
 
 
 
