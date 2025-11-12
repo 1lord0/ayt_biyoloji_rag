@@ -33,10 +33,11 @@ class GeminiEmbeddings(Embeddings):
 
     def embed_query(self, text: str) -> List[float]:
         return genai.embed_content(
-            model="models/embedding-gecko-001",
+            model="models/text-embedding-004",
             content=text,
             task_type="retrieval_query"
         )["embedding"]
+
 
 # ===============================
 # 🚀 (Opsiyonel) İndeks oluşturma fonksiyonu
@@ -71,3 +72,4 @@ def build_index():
 
     vectordb.persist()
     print("✅ İndeks oluşturma tamamlandı!")
+
