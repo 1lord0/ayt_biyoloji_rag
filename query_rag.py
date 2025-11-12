@@ -10,8 +10,12 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 DB_DIR = "db_gemini"
 
 # 📦 Chroma veritabanını yükle
+from langchain_community.vectorstores import Chroma
+from langchain_community.vectorstores.utils import filter_complex_metadata
+
+# 📦 RAM tabanlı (in-memory) veritabanı
 vectordb = Chroma(
-    persist_directory=DB_DIR,
+    persist_directory=None,   # 💡 disk yok
     embedding_function=GeminiEmbeddings()
 )
 
@@ -57,3 +61,4 @@ def ask_gemini(question, k=2):
 
     except Exception as e:
         return f"⚠️ Model hatası: {e}", []
+
