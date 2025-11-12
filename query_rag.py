@@ -55,12 +55,12 @@ def ask_gemini(question, k=2):
 
         # ⏱️ Timeout koruması (20 sn)
         response = model.generate_content(
-            prompt,
-            request_options={"timeout": 20}
+            prompt
         )
         return response.text.strip(), docs
 
     except Exception as e:
         return f"⚠️ Model hatası: {e}", []
+
 
 
