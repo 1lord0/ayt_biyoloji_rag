@@ -3,45 +3,57 @@ import google.generativeai as genai
 from langchain_community.vectorstores import Chroma
 from build_index_gemini import GeminiEmbeddings
 
-# 🔑 API key
+# 🔑 API key'i al (Streamlit secrets üzerinden)
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
+# 📂 Veritabanı klasörü
 DB_DIR = "db_gemini"
 
-# 📦 Vektör veritabanını yükle
-vectordb = Chroma(persist_directory=DB_DIR, embedding_function=GeminiEmbeddings())
+# 📦 Chroma veritabanını yükle
+vectordb = Chroma(
+    persist_directory=DB_DIR,
+    embedding_function=GeminiEmbeddings()
+)
 
 def ask_gemini(question, k=2):
-    """PDF veritabanından bilgi çekip Gemini ile cevap oluşturur"""
+    """
+    AYT Biyoloji PDF veritabanından bilgi çekip
+    Gemini API ile hızlı şekilde cevap oluşturur.
+    """
+
     try:
+        # En alakalı k adet parçayı bul
         docs = vectordb.similarity_search(question, k=k)
     except Exception as e:
-        return f"Veritabanı hatası: {e}", []
+        return f"⚠️ Veritabanı hatası: {e}", []
 
-    # 🔹 Bağlam birleştirme
+    # Bağlam birleştirme
     if not docs:
-        context = "PDF içeriğinde bu soruyla doğrudan ilgili bilgi bulunamadı."
+        context = "PDF içeriğinde bu soruyla ilgili doğrudan bilgi bulunamadı."
     else:
         context = "\n\n".join([f"{i+1}. {d.page_content}" for i, d in enumerate(docs)])
 
     # 🔹 Optimize edilmiş prompt
     prompt = f"""
-    Aşağıda MEB AYT Biyoloji kitabından alınmış bilgiler yer alıyor.
-    Bu bilgiler ışığında aşağıdaki soruyu açıklayıcı ve sade bir Türkçe ile cevapla.
-    Gereksiz tekrarlardan kaçın. Sadece PDF içeriğine dayan, uydurma bilgi ekleme.
-    Eğer kaynaklarda doğrudan bilgi yoksa "Kitapta bu konuda net bilgi bulunmamaktadır." de.
+    Aşağıda MEB AYT Biyoloji kitabından alınmış bilgiler bulunuyor.
+    Bu bilgilere dayanarak aşağıdaki soruyu sade, net ve bilimsel bir dille yanıtla.
+    Eğer kaynaklarda bilgi yoksa "Kitapta bu konuda net bilgi bulunmamaktadır." de.
 
-    📘 Soru:
+    🔹 Soru:
     {question}
 
-    📚 Kaynak Metinler:
+    📘 Kaynak Bilgiler:
     {context}
     """
 
     try:
         model = genai.GenerativeModel("gemini-2.0-flash")
-        response = model.generate_content(prompt,request_options={"timeout": 20})
+        # ⏱️ Timeout koruması (20 sn)
+        response = model.generate_content(
+            prompt,
+            request_options={"timeout": 20}
+        )
         return response.text.strip(), docs
-    except Exception as e:
-        return f"Model hatası: {e}", []
 
+    except Exception as e:
+        return f"⚠️ Model hatası: {e}", []
