@@ -50,7 +50,8 @@ def ask_gemini(question, k=2):
     """
 
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("models/gemini-1.5-flash")
+
 
         # ⏱️ Timeout koruması (20 sn)
         response = model.generate_content(
@@ -60,6 +61,7 @@ def ask_gemini(question, k=2):
 
     except Exception as e:
         return f"⚠️ Model hatası: {e}", []
+
 
 
 
