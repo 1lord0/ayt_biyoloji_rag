@@ -39,9 +39,8 @@ def ask_gemini(question, k=2):
 
     # 🔹 Optimize edilmiş prompt
     prompt = f"""
-    Aşağıda MEB AYT Biyoloji kitabından alınmış bilgiler bulunuyor.
-    Bu bilgilere dayanarak aşağıdaki soruyu sade, net ve bilimsel bir dille yanıtla.
-    Eğer kaynaklarda bilgi yoksa "Kitapta bu konuda net bilgi bulunmamaktadır." de.
+    bilgilere dayanarak soruyu sade bir dille yanıtla.
+     bilgi yoksa "Kitapta bu konuda net bilgi bulunmamaktadır." de.
 
     🔹 Soru:
     {question}
@@ -61,6 +60,7 @@ def ask_gemini(question, k=2):
 
     except Exception as e:
         return f"⚠️ Model hatası: {e}", []
+
 
 
 
